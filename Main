@@ -1,0 +1,138 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+public class Main {
+    public static void main(String[] args) {
+        try {
+            // Carga los datos de ventas del archivo sales_data.csv en una lista
+            List<Ventas> ventas = cargarVentas("sales_data.csv");
+
+            if (ventas != null) {
+                // Filtra las ventas de la ciudad de Nueva York
+                List<Ventas> ventasNY = ventas.stream()
+                        .filter(v -> v.getCiudad().equals("NYC"))
+                        .collect(Collectors.toList());
+
+                // Calcula el total de ventas de Nueva York
+                double totalVentasNY = ventasNY.stream()
+                        .mapToDouble(Ventas::getTotal)
+                        .sum();
+
+                // Cuenta cuántos autos clásicos se vendieron en Nueva York
+                long autosClasicosNY = ventasNY.stream()
+                        .filter(v -> v.getProducto().getCategoria().equals("Classic Cars"))
+                        .count();
+
+                // Calcula el total de ventas de autos clásicos en Nueva York
+                double totalVentasAutosClasicosNY = ventasNY.stream()
+                        .filter(v -> v.getProducto().getCategoria().equals("Classic Cars"))
+                        .mapToDouble(Ventas::getTotal)
+                        .sum();
+
+                // Cuenta cuántas motocicletas se vendieron en Nueva York
+                long motocicletasVendidasNY = ventasNY.stream()
+                        .filter(v -> v.getProducto().getCategoria().equals("Motorcycles"))
+                        .count();
+
+                // Calcula el total de ventas de motocicletas en Nueva York
+                double totalVentasMotocicletasNY = ventasNY.stream()
+                        .filter(v -> v.getProducto().getCategoria().equals("Motorcycles"))
+                        .mapToDouble(Ventas::getTotal)
+                        .sum();
+
+                // Agrupa las ventas de Nueva York por cliente
+                Map<String, List<Ventas>> ventasPorClienteNY = ventasNY.stream()
+                        .collect(Collectors.groupingBy(Ventas::getNombreCliente));
+
+                // Obtiene al cliente de Nueva York que compró más autos
+                Optional<Map.Entry<String, List<Ventas>>> clienteMasAutosNY = ventasPorClienteNY.entrySet().stream()
+                        .max(Comparator.comparingInt(e -> e.getValue().size()));
+
+                // Agrupa todas las ventas por cliente
+                Map<String, List<Ventas>> ventasPorCliente = ventas.stream()
+                        .collect(Collectors.groupingBy(Ventas::getNombreCliente));
+
+                // Obtiene al cliente que más compró en general
+                Optional<Map.Entry<String, List<Ventas>>> clienteMasCompro = ventasPorCliente.entrySet().stream()
+                        .max(Comparator.comparingInt(e -> e.getValue().size()));
+
+                // Obtiene al cliente que menos compró en general
+                Optional<Map.Entry<String, List<Ventas>>> clienteMenosCompro = ventasPorCliente.entrySet().stream()
+                        .min(Comparator.comparingInt(e -> e.getValue().size()));
+
+                // Imprime los resultados
+                System.out.println("Ventas de New York: " + ventasNY);
+                System.out.println("Total de ventas de New York: " + totalVentasNY);
+                System.out.println("Autos clásicos vendidos en New York: " + autosClasicosNY);
+                System.out.println("Total de ventas de Autos Clásicos en New York: " + totalVentasAutosClasicosNY);
+                System.out.println("Motocicletas vendidas en New York: " + motocicletasVendidasNY);
+                System.out.println("Total de ventas de Motocicletas en New York: " + totalVentasMotocicletasNY);
+                clienteMasAutosNY.ifPresent(e -> System.out.println("Cliente de New York que más autos compró: " + e.getKey()));
+                clienteMasCompro.ifPresent(e -> System.out.println("Cliente que más compró en todo el archivo: " + e.getKey()));                                                                                                                                  clienteMenosCompro.ifPresent(e -> System.out.println("Cliente que menos compró en todo el archivo: " + e.getKey()));
+            }
+        } catch (IOException e) {
+            System.err.println("Error al leer el archivo: " + e.getMessage());
+        }
+    }
+
+    private static List<Ventas> cargarVentas(String archivo) throws IOException {
+        List<Ventas> ventas;
+        try (BufferedReader reader = new BufferedReader(new FileReader(archivo))) {
+            ventas = reader.lines()
+                    .skip(1) 
+                    .map(linea -> {
+                        String[] datos = linea.split(",");
+                        if (datos.length < 4) {
+                            return null;
+                        }
+                        Ventas venta = new Ventas();
+                        venta.ciudad = datos[0];
+                        Producto producto = new Producto();
+                        producto.categoria = datos[1];
+                        venta.producto = producto;
+                        venta.nombreCliente = datos[2];
+                        venta.total = Double.parseDouble(datos[3]);
+                        return venta;
+                    })
+                    .filter(venta -> venta != null)
+                    .collect(Collectors.toList());
+        }
+        return ventas;
+    }
+}
+class Ventas {
+    String ciudad;
+    Producto producto;
+    String nombreCliente;
+    double total;
+// Se crea el método getCiudad que retorna la ciudad de la venta.
+    public String getCiudad() {
+        return ciudad;
+    }
+// Se crea el método getProducto que retorna el objeto Producto de la venta.
+    public Producto getProducto() {
+        return producto;
+    }
+// Se crea el método getNombreCliente que retorna el nombre del cliente que realizó la venta.
+    public String getNombreCliente() {
+        return nombreCliente;
+    }
+// Se crea el método getTotal que retorna el total de la venta
+    public double getTotal() {
+        return total;
+    }
+}
+
+class Producto {
+    String categoria;
+
+    public String getCategoria() {
+        return categoria;
+    }
+}
